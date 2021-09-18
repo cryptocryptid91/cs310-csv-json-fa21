@@ -3,6 +3,7 @@ package edu.jsu.mcis;
 import java.io.*;
 import java.util.*;
 import com.opencsv.*;
+//import com.opencsv.exceptions.CsvException; //used for for experimenting w/ alternate method
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -66,15 +67,28 @@ public class Converter {
             CSVReader reader = new CSVReader(new StringReader(csvString));
             List<String[]> full = reader.readAll();
             Iterator<String[]> iterator = full.iterator();
-            
-            // INSERT YOUR CODE HERE
-            
-        }        
-        catch(Exception e) { e.printStackTrace(); }
-        
-        return results.trim();
-        
-    }
+            JSONObject json = new JSONObject();
+            JSONArray col = new JSONArray();
+            JSONArray row = new JSONArray();
+            JSONArray data = new JSONArray();
+            JSONArray holder;
+            String[] record = iterator.next();
+            for(int a = 0; a < record.length; a++) {
+                col.add(record[a]);}
+            while(iterator.hasNext()) {
+                holder = new JSONArray();
+                record = iterator.next();
+                row.add(record[0]);
+                for(int a = 1; a < record.length; a++){
+                    int stringHolder = Integer.parseInt(record[a]);
+                    holder.add(stringHolder);}
+                data.add(holder);}
+            json.put("rowHeaders", row);
+            json.put("colHeaders", col);
+            json.put("data", data);
+            results = JSONValue.toJSONString(json);}        
+        catch(Exception e) { e.printStackTrace();}
+        return results.trim();}
     
     public static String jsonToCsv(String jsonString) {
         
@@ -84,15 +98,23 @@ public class Converter {
 
             StringWriter writer = new StringWriter();
             CSVWriter csvWriter = new CSVWriter(writer, ',', '"', '\\', "\n");
-            
-            // INSERT YOUR CODE HERE
-            
-        }
-        
-        catch(Exception e) { e.printStackTrace(); }
-        
-        return results.trim();
-        
-    }
-
-}
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject)parser.parse(jsonString);
+            JSONArray col = (JSONArray)json.get("colHeaders");
+            JSONArray row = (JSONArray)json.get("rowHeaders");
+            JSONArray data = (JSONArray)json.get("data");
+            JSONArray holder;
+            String[] record = new String[col.size()];
+            for(int a = 0; a < col.size(); a++) {
+                record[a] = (String) col.get(a);}
+            csvWriter.writeNext(record);
+            for(int a = 0; a < data.size(); a++) {
+                holder = (JSONArray) data.get(a);
+                record = new String[holder.size() + 1];
+                record[0] = (String) row.get(a);
+                for(int b = 0; b < holder.size(); b++) {
+                    record[b + 1] = Long.toString((long)holder.get(b));}
+                csvWriter.writeNext(record);}
+            results = writer.toString();}
+        catch(ParseException e) { e.printStackTrace(); }
+        return results.trim();}}
